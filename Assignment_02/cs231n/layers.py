@@ -602,7 +602,33 @@ def conv_forward_naive(x, w, b, conv_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    m, c, x_h, x_w = x.shape
+    filters, c_fin, f_h, f_w = w.shape
+
+    pad = conv_param.get('pad', 0)
+    stride = conv_param.get('stride', 1)
+
+    output_height = int((x_h - f_h + 2 * pad) / stride + 1)
+    output_width = int((x_w - f_w + 2 * pad) / stride + 1)
+    
+    def pad4D(batch, conv_param):
+      pad_num = conv_param['pad']
+      m, c, h, w = batch.shape
+      batch_pad = np.zeros((m, c, h+2*pad_num, w+2*pad_num))
+      batch_pad[:, :, pad_num:-pad_num, pad_num:-pad_num] = batch
+      return batch_pad
+
+    try:
+      batch = pad4D(x, conv_param)
+    except KeyError:
+      batch = x
+
+    out = np.empty((m, filters, output_height, output_width))
+    for idx_inst, instance in enumerate(batch):
+      for idx_filt, filter in enumerate(w):
+        for i in range(output_height):
+          for j in range(output_width):
+            out[idx_inst, idx_filt, i, j] = np.sum(np.multiply(instance[:, i*stride:i*stride+f_h, j*stride:j*stride+f_h], filter)) + b[idx_filt]
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
