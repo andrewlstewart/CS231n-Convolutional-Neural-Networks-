@@ -55,7 +55,27 @@ class ThreeLayerConvNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        C, H, W = input_dim
+        # From conv_forward_naive
+        # w: Filter weights of shape (F, C, HH, WW)
+        self.params['W1'] = np.random.normal(scale=weight_scale, size=(num_filters, C, filter_size, filter_size))
+        self.params['b1'] = np.zeros(num_filters)
+
+        # width and height are preserved, 32 * 32 * 32 -> 32768
+        # hmm. running the forward pass for the loss calculation returns a c=32, h=w=16; width/height are not being preserved...
+        # self.params['W2'] = np.random.normal(scale=weight_scale, size=(H*W*num_filters, hidden_dim))
+        # self.params['b2'] = np.zeros(hidden_dim)
+
+        stride = 1 # Seems pretty dumb to need to assume this...
+        pad = (filter_size - 1) // 2
+        out_spatial_dim = (H-filter_size+2*pad)/stride + 1 # after conv
+        out_spatial_dim = (out_spatial_dim-2) // 2 + 1 # after pool.  this seems really dumb.
+        self.params['W2'] = np.random.normal(scale=weight_scale, size=(int(out_spatial_dim)**2*num_filters, hidden_dim))
+        self.params['b2'] = np.zeros(hidden_dim)
+
+        self.params['W3'] = np.random.normal(scale=weight_scale, size=(hidden_dim, num_classes))
+        self.params['b3'] = np.zeros(num_classes)
+
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -95,8 +115,10 @@ class ThreeLayerConvNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
-
+        out_conv_relu_forward, cache_conv_relu_forward = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
+        out_affine_relu_forward, cache_affine_relu_forward = affine_relu_forward(out_conv_relu_forward, W2, b2)
+        scores, cache_affine = affine_forward(out_affine_relu_forward, W3, b3)
+        
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -118,7 +140,20 @@ class ThreeLayerConvNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        loss, dout = softmax_loss(scores, y)
+        
+        dout, grads['W3'], grads['b3'] = affine_backward(dout, cache_affine)
+        loss += 0.5 * self.reg * np.sum(W3**2)
+        grads['W3'] += self.reg * W3
+
+        dout, grads['W2'], grads['b2'] = affine_relu_backward(dout, cache_affine_relu_forward)
+        loss += 0.5 * self.reg * np.sum(W2**2)
+        grads['W2'] += self.reg * W2
+
+        dout, grads['W1'], grads['b1'] = conv_relu_pool_backward(dout, cache_conv_relu_forward)
+        loss += 0.5 * self.reg * np.sum(W1**2)
+        grads['W1'] += self.reg * W1
+
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
