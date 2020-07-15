@@ -109,8 +109,8 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    margin[margin > 0] = 1 # Understand
-    valid_margin_count = margin.sum(axis=1) # Don't understand
+    margin[margin > 0] = 1
+    valid_margin_count = margin.sum(axis=1)
     margin[range(num_train), y] -= valid_margin_count
     dW = np.matmul(X.T, margin) / num_train
     
